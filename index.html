@@ -1,0 +1,370 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:light}body{margin:0;font:14px system-ui}</style></head><body><title>Jackson Remodel 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: full-bleed 3D canvas, a floating control strip top-left, a one-line note bottom. Palette is the plan's own: paper, slate ink, teal accent for new walls. */
+:root{
+  --bg:#f4f1ea; --panel:rgba(255,255,255,.86); --ink:#243441; --muted:#5f6b75; --accent:#1f7f8a; --border:#d6d0c4;
+  --font-ui:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#181c20; --panel:rgba(30,35,40,.88); --ink:#e9e5dc; --muted:#a3abb2; --accent:#5cb7c0; --border:#39424a; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#181c20; --panel:rgba(30,35,40,.88); --ink:#e9e5dc; --muted:#a3abb2; --accent:#5cb7c0; --border:#39424a; color-scheme:dark }
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 var(--font-ui);overflow:hidden;
+  padding-left:max(0px, env(safe-area-inset-left,0px)); padding-right:max(0px, env(safe-area-inset-right,0px));}
+#c{display:block;width:100%;height:100%;touch-action:none;outline:none}
+.hud{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:max(16px, env(safe-area-inset-left,0px));right:max(16px, env(safe-area-inset-right,0px));
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;pointer-events:none}
+.hud>*{pointer-events:auto}
+.title{background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;padding:8px 12px;max-width:100%}
+.title b{display:block;font-size:15px;letter-spacing:.01em}
+.title span{color:var(--muted);font-size:12px}
+button{background:var(--panel);color:var(--ink);border:1px solid var(--border);border-radius:999px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;backdrop-filter:blur(8px)}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.foot{position:fixed;left:max(16px, env(safe-area-inset-left,0px));right:max(16px, env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  color:var(--muted);font-size:12px;pointer-events:none;text-shadow:0 1px 0 var(--bg)}
+</style>
+
+<canvas id="c" tabindex="0" aria-label="3D model of the Jackson remodel, Revision 23"></canvas>
+<div class="hud">
+  <div class="title"><b>Jackson Remodel · Revision 23</b><span>3D concept · drag to orbit · scroll or pinch to zoom · right-drag or shift-drag to pan</span></div>
+  <button data-v="overview" class="on">Overview</button>
+  <button data-v="family">From family room</button>
+  <button data-v="bay">From the bay</button>
+  <button data-v="cooktop">Cooktop wall</button>
+  <button data-v="ovens">Oven wall</button>
+  <button data-v="pantry">Inside pantry</button>
+  <button data-v="plan">Plan view</button>
+  <button id="lbl" class="on">Labels</button>
+</div>
+<div class="foot">Modeled in inches from the Revision 23 plan. Dark cherry floors, quartzite counters, stainless appliances, light natural cabinets, full-height stainless vent. Bay windows, door swings and cabinet door splits are assumptions; dimensions still need field verification.</div>
+
+<script type="module">
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
+
+// ---------- renderer / scene ----------
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xe6ecf0);
+scene.fog=new THREE.Fog(0xe6ecf0,1100,2600);
+const camera=new THREE.PerspectiveCamera(46,1,2,6000);
+
+scene.add(new THREE.HemisphereLight(0xffffff,0xb9ad96,0.85));
+scene.add(new THREE.AmbientLight(0xffffff,0.25));
+const sun=new THREE.DirectionalLight(0xfff3de,1.7);
+sun.position.set(520,460,420); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-380,right:380,top:380,bottom:-380,near:10,far:1800});
+sun.shadow.bias=-0.0006; sun.shadow.normalBias=0.6;
+sun.target.position.set(136,0,170); scene.add(sun,sun.target);
+const fill=new THREE.DirectionalLight(0xdfe9ff,0.5); fill.position.set(-300,300,-200); scene.add(fill);
+
+// ---------- materials ----------
+const std=(color,o={})=>new THREE.MeshStandardMaterial({color,roughness:0.85,...o});
+const M={
+  wall:std(0xf1ede5,{roughness:0.95}),
+  wallNew:std(0xe4edee,{roughness:0.95}),
+  oak:std(0xd9ccb4,{roughness:0.6}),      // light natural oak / greige, not white
+  white:std(0xd9ccb4,{roughness:0.6}),    // uppers match the bases
+  teal:std(0xd9ccb4,{roughness:0.6}),     // island + oven wall, same light cabinet finish
+
+  quartz:std(0xe8e4dc,{roughness:0.3}),
+  steel:std(0xc6cacd,{roughness:0.42,metalness:0.45}),
+  dark:std(0x2a2d31,{roughness:0.35,metalness:0.2}),
+  kick:std(0x3a3129,{roughness:0.9}),
+  glass:new THREE.MeshPhysicalMaterial({color:0xa9d2e0,roughness:0.08,metalness:0,transparent:true,opacity:0.32}),
+  door:std(0xece7dc,{roughness:0.6}),
+  shelf:std(0xe1d8c6,{roughness:0.8}),
+  tableTop:std(0x8a5a35,{roughness:0.5}),
+  chair:std(0xd8d0c0,{roughness:0.9}),
+  chairLeg:std(0x4a3b2d,{roughness:0.7}),
+  ground:std(0x9fb08e,{roughness:1}),
+};
+
+// ---------- geometry helpers (inches: x east, z south, y up) ----------
+const H=120, T=4.5, TX=6;
+function box(x0,x1,y0,y1,z0,z1,mat,opts={}){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0),mat);
+  m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);
+  m.castShadow=opts.cast!==false; m.receiveShadow=true; scene.add(m); return m;
+}
+function seg(x0,z0,x1,z1){
+  const g=new THREE.Group(); g.position.set(x0,0,z0);
+  g.rotation.y=Math.atan2(-(z1-z0),x1-x0); scene.add(g);
+  return [g,Math.hypot(x1-x0,z1-z0)];
+}
+function lbox(g,u0,u1,y0,y1,w0,w1,mat,cast=true){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(u1-u0,y1-y0,w1-w0),mat);
+  m.position.set((u0+u1)/2,(y0+y1)/2,(w0+w1)/2); m.castShadow=cast; m.receiveShadow=true; g.add(m); return m;
+}
+function wall(x0,z0,x1,z1,t=T,h=H,mat=M.wall){ const [g,L]=seg(x0,z0,x1,z1); lbox(g,-t/2,L+t/2,0,h,-t/2,t/2,mat); }
+function wallDoor(x0,z0,x1,z1,t,h,u0,u1,head=80,mat=M.wall){
+  const [g,L]=seg(x0,z0,x1,z1);
+  if(u0>0) lbox(g,-t/2,u0,0,h,-t/2,t/2,mat);
+  if(u1<L) lbox(g,u1,L+t/2,0,h,-t/2,t/2,mat);
+  lbox(g,u0,u1,head,h,-t/2,t/2,mat);
+}
+function wallWin(x0,z0,x1,z1,t,h,sill,head,j){
+  const [g,L]=seg(x0,z0,x1,z1);
+  lbox(g,-t/2,L+t/2,0,sill,-t/2,t/2,M.wall);
+  lbox(g,-t/2,L+t/2,head,h,-t/2,t/2,M.wall);
+  lbox(g,-t/2,j,sill,head,-t/2,t/2,M.wall);
+  lbox(g,L-j,L+t/2,sill,head,-t/2,t/2,M.wall);
+  lbox(g,j,L-j,sill,head,-0.4,0.4,M.glass,false);
+  lbox(g,j,L-j,sill,sill+2,-1.6,1.6,M.white);
+  lbox(g,j,L-j,head-2,head,-1.6,1.6,M.white);
+  lbox(g,j,j+1.5,sill,head,-1.6,1.6,M.white);
+  lbox(g,L-j-1.5,L-j,sill,head,-1.6,1.6,M.white);
+  lbox(g,L/2-0.75,L/2+0.75,sill,head,-1.6,1.6,M.white);
+}
+function door(hx,hz,w,dir,mat=M.door,h=80){
+  const g=new THREE.Group(); g.position.set(hx,0,hz); g.rotation.y=Math.atan2(-dir[1],dir[0]);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,1.75),mat); m.position.set(w/2,h/2,0);
+  m.castShadow=true; m.receiveShadow=true; g.add(m); scene.add(g);
+}
+// door/drawer fronts on one face of a cabinet box, proud of the carcass
+function fronts(x0,x1,z0,z1,y0,y1,face,cols=1,rows=1,mat=M.oak,gap=0.35,proud=0.75){
+  const horiz=(face==='S'||face==='N');
+  const a0=horiz?x0:z0, a1=horiz?x1:z1;
+  const cw=(a1-a0-gap*(cols+1))/cols, rh=(y1-y0-gap*(rows+1))/rows;
+  for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+    const aa=a0+gap+c*(cw+gap), bb=aa+cw, yy=y0+gap+r*(rh+gap), y2=yy+rh;
+    if(face==='S') box(aa,bb,yy,y2,z1,z1+proud,mat);
+    else if(face==='N') box(aa,bb,yy,y2,z0-proud,z0,mat);
+    else if(face==='E') box(x1,x1+proud,yy,y2,aa,bb,mat);
+    else box(x0-proud,x0,yy,y2,aa,bb,mat);
+  }
+}
+function handle(x,y,z,face,len=5){ // small bar pull
+  const t=0.5;
+  if(face==='S') box(x-len/2,x+len/2,y-t/2,y+t/2,z+0.75,z+1.6,M.steel);
+  else if(face==='E') box(x+0.75,x+1.6,y-t/2,y+t/2,z-len/2,z+len/2,M.steel);
+  else if(face==='W') box(x-1.6,x-0.75,y-t/2,y+t/2,z-len/2,z+len/2,M.steel);
+}
+function shelves(x0,x1,z0,z1,back,h=84,n=5,mat=M.shelf){
+  box(x0,x0+0.75,0,h,z0,z1,mat); box(x1-0.75,x1,0,h,z0,z1,mat);
+  if(back==='N') box(x0,x1,0,h,z0,z0+0.5,mat);
+  if(back==='S') box(x0,x1,0,h,z1-0.5,z1,mat);
+  if(back==='W') box(x0,x0+0.5,0,h,z0,z1,mat);
+  for(let i=0;i<=n;i++){ const y=Math.min(h-1,(h/n)*i); box(x0,x1,y,y+1,z0,z1,mat); }
+  for(let x=x0+36;x<x1-10;x+=36) box(x,x+0.75,0,h,z0,z1,mat);
+}
+function cyl(r,y0,y1,x,z,mat,rt=r){ const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,r,y1-y0,40),mat); m.position.set(x,(y0+y1)/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m; }
+
+// ---------- floor ----------
+function floorTex(){
+  const c=document.createElement('canvas'); c.width=c.height=1024; const x=c.getContext('2d');
+  x.fillStyle='#2a1309'; x.fillRect(0,0,1024,1024);
+  const pw=128; let seed=7; const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  // dark cherry: deep red-brown planks with subtle tone variation and grain streaks
+  for(let r=0;r<8;r++){ const off=(r*373)%1024; for(let s=-2;s<4;s++){ const l=off+s*400; x.fillStyle=`hsl(${12+rnd()*8},${48+rnd()*12}%,${20+rnd()*7}%)`; x.fillRect(l,r*pw,400-3,pw-3);
+    for(let k=0;k<6;k++){ x.fillStyle=`hsla(${10+rnd()*10},50%,${14+rnd()*18}%,.35)`; x.fillRect(l,r*pw+rnd()*pw,400-3,1+rnd()*2); } } }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;
+}
+function quartziteTex(){
+  // warm cream quartzite with soft taupe and gold veining
+  const c=document.createElement('canvas'); c.width=c.height=1024; const x=c.getContext('2d');
+  let seed=19; const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  x.fillStyle='#ebe5d9'; x.fillRect(0,0,1024,1024);
+  for(let i=0;i<9000;i++){ x.fillStyle=`hsla(${30+rnd()*20},${15+rnd()*20}%,${55+rnd()*35}%,.18)`; x.fillRect(rnd()*1024,rnd()*1024,1.5+rnd()*3,1.5+rnd()*3); }
+  const vein=(w,col,blur)=>{ x.strokeStyle=col; x.lineWidth=w; x.shadowColor=col; x.shadowBlur=blur; x.beginPath();
+    let px=rnd()*1024, py=-20; x.moveTo(px,py);
+    for(let k=0;k<6;k++){ const nx=px+(rnd()-0.5)*420, ny=py+200+rnd()*80; x.bezierCurveTo(px+(rnd()-0.5)*200,py+70,nx+(rnd()-0.5)*200,ny-70,nx,ny); px=nx; py=ny; }
+    x.stroke(); };
+  for(let i=0;i<7;i++) vein(10+rnd()*22,`hsla(${28+rnd()*12},18%,${62+rnd()*14}%,.35)`,28);
+  for(let i=0;i<9;i++) vein(1.2+rnd()*2.5,`hsla(${26+rnd()*14},${22+rnd()*18}%,${40+rnd()*22}%,.55)`,2);
+  for(let i=0;i<4;i++) vein(1+rnd()*2,`hsla(40,45%,58%,.35)`,1);
+  x.shadowBlur=0;
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;
+}
+M.quartz.map=quartziteTex(); M.quartz.color.set(0xffffff); M.quartz.roughness=0.22; M.quartz.needsUpdate=true;
+{
+  const tex=floorTex(); tex.repeat.set(1/48,1/48);
+  const pts=[[0,0],[230,0],[230,144],[282,144],[314,176],[314,250],[282,282],[231,282],[231,345],[-10,345],[-10,282],[-42,282],[-42,189],[0,189]];
+  const shape=new THREE.Shape(pts.map(p=>new THREE.Vector2(p[0],-p[1])));
+  const g=new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,std(0xffffff,{map:tex,roughness:0.38})); m.receiveShadow=true; scene.add(m);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),M.ground); ground.rotation.x=-Math.PI/2; ground.position.set(136,-0.5,170); ground.receiveShadow=true; scene.add(ground);
+  // family room floor continues south; a slightly different rug-less tone is fine
+}
+
+// ---------- walls ----------
+wall(0,0,230,0,TX);                 // north exterior
+wall(0,0,0,131,TX);                 // mudroom west
+wall(69,0,69,131,T);                // mudroom / pantry partition
+wallDoor(0,131,69,131,T,H,25,50,80,M.wallNew);     // mudroom south (new) with door
+wallDoor(69,68,230,68,T,H,3,33,120,M.wallNew);     // back wall (new), concealed pantry entrance x 72..102
+wall(230,0,230,144,TX);             // east exterior
+wall(230,144,282,144,TX);           // bay return
+wallWin(282,144,314,176,TX,H,30,92,6);
+wallWin(314,176,314,250,TX,H,30,92,6);
+wallWin(314,250,282,282,TX,H,30,92,6);
+wallDoor(282,282,231,282,TX,H,5,41);  // bay south wall with exterior door (x 241..277)
+wall(231,282,231,318,TX);           // stub toward family room
+wallDoor(0,131,0,189,TX,H,0,33);    // hall west: exterior door z 131..164, wall to bath
+wall(-42,189,0,189,T);              // bath north
+wall(-42,189,-42,282,TX);           // bath west exterior
+wall(-42,282,0,282,TX);             // bath south
+wallDoor(0,189,0,303,T,H,21,51);    // bath east with door z 210..240
+wall(40,177,40,297,4,H,M.wallNew);  // floating wall, 10' long, full height, open both ends
+
+// doors (leaf hinged at hx,hz; dir = open-leaf direction in plan)
+door(50,131,25,[-0.34,-0.94]);          // mudroom door, swings into mudroom
+door(0,131,33,[0.94,0.34]);             // exterior door into hall
+door(0,210,30,[-0.94,0.34]);            // bath door, swings into bath
+door(241,282,36,[0.34,0.94],M.teal);    // bay exterior door, swings OUT
+
+// ---------- mudroom: bench / lockers ----------
+box(5,21,0,84,8,115,M.oak); fronts(5,21,8,115,40,84,'E',4,1,M.oak);
+box(5,21.5,0,1,8,115,M.kick);
+// open bench below: a slab and cubbies
+for(let z=8;z<115;z+=26.75) box(21,21.5,2,40,z,z+0.75,M.oak);
+box(5,22,17,18.5,8,115,M.oak);
+
+// ---------- pantry ----------
+shelves(70,222,6,24,'N',84,5);       // 18" rear shelves
+shelves(70,82,24,36,'W',84,5);       // short return
+shelves(102,222,54,66,'S',84,5);     // 12" shelves
+// concealed entrance: tall cabinet-front door in the opening, false drawers below, doors above
+box(72,102,0,120,70,95,M.oak); box(72,102,0,4,70,73,M.kick);
+fronts(72,102,70,95,4,34.5,'S',1,4,M.oak); fronts(72,102,70,95,36,120,'S',2,1,M.oak);
+box(71,103,34.5,36,69,96,M.quartz);
+
+// ---------- back wall run (x 102..230, counter 25.5" deep) ----------
+function baseRun(x0,x1,z0,z1,mat){ box(x0+0.5,x1-0.5,0,4,z0+3,z1-3,M.kick); box(x0,x1,4,34.5,z0,z1,mat); box(x0-1,x1+1,34.5,36,z0-1,z1+1,M.quartz); }
+baseRun(102,174,70,95.5,M.oak); baseRun(210,230,70,95.5,M.oak);
+fronts(102,123,70,95.5,4,34.5,'S',1,3); fronts(123,153,70,95.5,4,34.5,'S',2,1); fronts(153,174,70,95.5,4,34.5,'S',1,3); fronts(210,230,70,95.5,4,34.5,'S',1,3);
+[[112.5,8],[112.5,19],[112.5,30],[163.5,8],[163.5,19],[163.5,30],[220,8],[220,19],[220,30]].forEach(([x,y])=>handle(x,y,96.25,'S',8));
+box(102,174,36,54,70,70.6,M.quartz); box(210,230,36,54,70,70.6,M.quartz);  // backsplash
+box(123,153,36,36.6,72,93,M.dark);                     // 30" cooktop
+// uppers to ceiling, 13" deep; hood over cooktop
+box(102,123,54,120,70,83,M.white); fronts(102,123,70,83,54,120,'S',1,2,M.white);
+box(153,174,54,120,70,83,M.white); fronts(153,174,70,83,54,120,'S',1,2,M.white);
+// stainless chimney hood, full height to the ceiling
+box(123,153,66,72,70,92,M.steel); box(124,152,72,73,70,91,M.steel);
+box(126,150,73,120,70,86,M.steel);
+box(210,230,54,120,70,83,M.white); fronts(210,230,70,83,54,120,'S',1,2,M.white);
+// 36" fridge, 33.5" deep incl. back gap, cabinet above
+box(174,210,0,84,70,103.5,M.steel); fronts(174,210,70,103.5,0,48,'S',1,1,M.steel,0.5,0.6); fronts(174,210,70,103.5,48,84,'S',2,1,M.steel,0.5,0.6);
+box(185,186,52,80,104.1,105.2,M.dark); box(198,199,52,80,104.1,105.2,M.dark); box(176,208,22,23,104.1,105.2,M.dark);
+box(174,210,84,120,70,95.5,M.white); fronts(174,210,70,95.5,84,120,'S',2,1,M.white);
+
+// ---------- floating wall, east face: 78" counter + uppers, 32" oven tower, 10" end filler ----------
+baseRun(42,67.5,177,255,M.teal);
+fronts(42,67.5,177,203,4,34.5,'E',1,3,M.teal); fronts(42,67.5,203,229,4,34.5,'E',1,3,M.teal); fronts(42,67.5,229,255,4,34.5,'E',1,3,M.teal);
+[190,216,242].forEach(z=>[8,19,30].forEach(y=>handle(68.25,y,z,'E',8)));
+box(42,42.6,36,54,177,255,M.quartz);
+box(42,55,54,120,177,255,M.white); fronts(42,55,177,255,54,120,'E',3,2,M.white);
+box(42,67,0,120,255,287,M.teal); box(42,67,0,4,255,287,M.kick);
+fronts(42,67,255,287,4,26,'E',1,1,M.teal);
+box(67,67.75,27,51,257,285,M.steel); box(67.75,68.3,29,49,259,283,M.dark); box(67.75,68.9,48.5,49.7,259,283,M.steel);   // upper oven + handle
+box(67,67.75,53,77,257,285,M.steel); box(67.75,68.3,55,75,259,283,M.dark); box(67.75,68.9,74.5,75.7,259,283,M.steel);   // lower oven + handle
+fronts(42,67,255,287,79,120,'E',1,1,M.teal);
+box(42,52,0,120,287,297,M.teal); fronts(42,52,287,297,4,120,'E',1,1,M.teal);
+
+// ---------- island 54" x 144" ----------
+// carcass is 44" deep so the 54" top overhangs 11.5" on the east (table) side for seating
+box(115.5,153.5,0,4,151.5,289.5,M.kick);
+box(112.5,156.5,4,34.5,148.5,292.5,M.teal);
+box(111,168,34.5,36,147,294,M.quartz);
+box(156.5,157,4,34.5,148.5,292.5,M.teal);   // finished back panel
+fronts(112.5,136.5,148.5,166.5,4,34.5,'W',1,3,M.teal);      // 18" drawers
+fronts(112.5,136.5,166.5,202.5,4,34.5,'W',2,1,M.teal);      // 36" sink base
+box(111.75,112.5,6,32.5,203,226,M.steel); box(111.1,111.75,30,32,204,225,M.dark); box(111.1,111.6,8,9.2,206,223,M.steel); // 24" stainless DW + bar handle
+fronts(112.5,136.5,226.5,292.5,4,34.5,'W',3,1,M.teal);      // 66" storage
+[[157.5,8],[157.5,19],[157.5,30]].forEach(([z,y])=>handle(111.75,y,z,'W',8));
+[175,194,237,259,281].forEach(z=>handle(111.75,30,z,'W',6));
+box(115,134,35.4,36.3,170,199,M.steel); box(116,133,35.6,36.5,171,198,M.dark);   // sink
+cyl(0.6,36,48,137,184.5,M.steel); box(129,137.5,47.4,48.6,184,185,M.steel);     // faucet
+
+// ---------- bar stools on the island's east (table) side, counter height ----------
+function stool(cx,cz){
+  cyl(7.5,24,26,cx,cz,M.tableTop);                  // seat
+  cyl(1,1.5,24,cx,cz,M.steel);                      // pedestal
+  cyl(7,0,1.5,cx,cz,M.steel,5.5);                   // base
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(6,0.5,10,36),M.steel); ring.rotation.x=Math.PI/2; ring.position.set(cx,8,cz); ring.castShadow=true; scene.add(ring);
+}
+[178,208,238,268].forEach(z=>stool(176,z));
+
+// ---------- table 48" round, 4 chairs ----------
+const TC=[252,213.5];
+cyl(24,29.5,31,TC[0],TC[1],M.tableTop); cyl(3,1,29.5,TC[0],TC[1],M.chairLeg); cyl(12,0,1.2,TC[0],TC[1],M.chairLeg,8);
+function chair(cx,cz,a){
+  const g=new THREE.Group(); g.position.set(cx,0,cz); g.rotation.y=a; scene.add(g);
+  const add=(x0,x1,y0,y1,z0,z1,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0),m);b.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);b.castShadow=b.receiveShadow=true;g.add(b);};
+  add(-9,9,17,19,-9,9,M.chair); add(-9,9,19,36,-9,-7.5,M.chair);
+  [[-8,-8],[8,-8],[-8,8],[8,8]].forEach(([x,z])=>add(x-0.75,x+0.75,0,17,z-0.75,z+0.75,M.chairLeg));
+}
+chair(TC[0],TC[1]-36,0); chair(TC[0],TC[1]+36,Math.PI); chair(TC[0]+36,TC[1],Math.PI/2); chair(TC[0]-36,TC[1],-Math.PI/2);
+
+// ---------- labels ----------
+const labels=new THREE.Group(); scene.add(labels);
+function label(text,x,y,z,s=1){
+  const c=document.createElement('canvas'); const ctx=c.getContext('2d');
+  ctx.font='600 40px -apple-system,Helvetica,Arial,sans-serif'; const w=Math.ceil(ctx.measureText(text).width)+44; c.width=w; c.height=68;
+  ctx.font='600 40px -apple-system,Helvetica,Arial,sans-serif'; ctx.fillStyle='rgba(36,52,65,.86)';
+  ctx.beginPath(); ctx.roundRect(0,0,w,68,34); ctx.fill(); ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.fillText(text,22,36);
+  const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,transparent:true,sizeAttenuation:false})); sp.renderOrder=999;
+  sp.userData.base=[w/68*0.052*s,0.052*s]; sp.position.set(x,y,z); labels.add(sp);
+}
+function fitLabels(){ labels.children.forEach(sp=>{const [bw,bh]=sp.userData.base; sp.scale.set(bw/camera.aspect,bh,1);}); }
+label('MUDROOM',34,100,70); label('PANTRY 13′6″ × 5′6″',150,100,40); label('BATH',-21,100,235); label('HALL',20,100,160);
+label('ISLAND 54″ × 144″',139,48,222); label('FLOATING WALL 10′',40,128,237); label('DOUBLE OVENS',70,100,271);
+label('36″ FRIDGE',192,96,92); label('30″ COOKTOP',138,80,86); label('48″ ROUND',252,44,213.5); label('BAY',298,100,213);
+label('OPEN TO FAMILY ROOM',115,24,335); label('CONCEALED PANTRY DOOR',87,66,100,0.8);
+
+// ---------- camera control ----------
+const ctl={target:new THREE.Vector3(136,0,170),r:700,theta:-0.6,phi:0.9};
+function applyCam(){
+  const s=Math.sin(ctl.phi);
+  camera.position.set(ctl.target.x+ctl.r*s*Math.sin(ctl.theta),ctl.target.y+ctl.r*Math.cos(ctl.phi),ctl.target.z+ctl.r*s*Math.cos(ctl.theta));
+  camera.lookAt(ctl.target);
+}
+const views={
+  overview:{p:[430,400,480],t:[135,0,165]},
+  family:{p:[130,64,440],t:[140,44,160]},
+  bay:{p:[292,62,236],t:[118,40,150]},
+  cooktop:{p:[150,62,262],t:[158,52,72]},
+  ovens:{p:[180,60,300],t:[50,48,250]},
+  pantry:{p:[224,62,46],t:[86,46,28]},
+  plan:{p:[136,820,172],t:[136,0,170]},
+};
+function setView(v){
+  const p=new THREE.Vector3(...v.p), t=new THREE.Vector3(...v.t), d=p.clone().sub(t);
+  ctl.target.copy(t); ctl.r=d.length(); ctl.phi=Math.acos(THREE.MathUtils.clamp(d.y/ctl.r,-1,1)); ctl.theta=Math.atan2(d.x,d.z);
+}
+const btns=[...document.querySelectorAll('button[data-v]')];
+btns.forEach(b=>b.addEventListener('click',()=>{btns.forEach(x=>x.classList.toggle('on',x===b)); setView(views[b.dataset.v]);}));
+document.getElementById('lbl').addEventListener('click',e=>{labels.visible=!labels.visible; e.currentTarget.classList.toggle('on',labels.visible);});
+
+const pts=new Map(); let last=null, pinch=null;
+const pdist=()=>{const a=[...pts.values()]; return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);};
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId,[e.clientX,e.clientY]); last=[e.clientX,e.clientY]; if(pts.size===2) pinch=pdist(); btns.forEach(x=>x.classList.remove('on'));});
+canvas.addEventListener('pointermove',e=>{
+  if(!pts.has(e.pointerId)) return; pts.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pts.size===2){ const d=pdist(); ctl.r=THREE.MathUtils.clamp(ctl.r*pinch/d,40,2600); pinch=d; return; }
+  if(!last) return; const dx=e.clientX-last[0], dy=e.clientY-last[1]; last=[e.clientX,e.clientY];
+  if((e.buttons&2)||e.shiftKey){
+    const k=ctl.r*0.0014, right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
+    ctl.target.addScaledVector(right,-dx*k).addScaledVector(up,dy*k);
+  } else { ctl.theta-=dx*0.005; ctl.phi=THREE.MathUtils.clamp(ctl.phi-dy*0.005,0.03,1.56); }
+});
+const endP=e=>{pts.delete(e.pointerId); pinch=null; last=null;};
+canvas.addEventListener('pointerup',endP); canvas.addEventListener('pointercancel',endP);
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('wheel',e=>{e.preventDefault(); ctl.r=THREE.MathUtils.clamp(ctl.r*(1+e.deltaY*0.0012),40,2600);},{passive:false});
+
+function resize(){ const w=canvas.clientWidth||innerWidth, h=canvas.clientHeight||innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); fitLabels(); }
+addEventListener('resize',resize); resize(); setView(views.overview);
+renderer.setAnimationLoop(()=>{ applyCam(); renderer.render(scene,camera); });
+// offscreen still at any size (used to export renders)
+window.__render3d=(view,w,h)=>{ if(view) setView(views[view]); const pr=renderer.getPixelRatio(); renderer.setPixelRatio(1); renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); fitLabels(); applyCam(); renderer.render(scene,camera); const url=renderer.domElement.toDataURL('image/png'); renderer.setPixelRatio(pr); resize(); return url; };
+</script>
+</body></html>
