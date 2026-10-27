@@ -37,6 +37,7 @@ button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   <button data-v="pantry">Inside pantry</button>
   <button data-v="plan">Plan view</button>
   <button id="lbl" class="on">Labels</button>
+  <button id="dim">Measurements</button>
 </div>
 <div class="foot">Modeled in inches from the Revision 23 plan. Dark cherry floors, quartzite counters, stainless appliances, light natural cabinets, full-height stainless vent. Bay windows, door swings and cabinet door splits are assumptions; dimensions still need field verification.</div>
 
@@ -212,7 +213,7 @@ wall(-42,189,0,189,T);              // bath north
 wall(-42,189,-42,282,TX);           // bath west exterior
 wall(-42,282,0,282,TX);             // bath south
 wallDoor(0,189,0,303,T,H,21,51);    // bath east with door z 210..240
-wall(40,177,40,297,4,H,M.wallNew);  // floating wall, 10' long, full height, open both ends
+wall(42,177,42,297,4,H,M.wallNew);  // floating wall, 10' long, full height, open both ends (40" hall to its west)
 
 // doors (leaf hinged at hx,hz; dir = open-leaf direction in plan)
 door(50,131,25,[-0.34,-0.94]);          // mudroom door, swings into mudroom
@@ -256,32 +257,34 @@ box(185,186,52,80,104.1,105.2,M.dark); box(198,199,52,80,104.1,105.2,M.dark); bo
 box(174,210,84,120,70,95.5,M.white); fronts(174,210,70,95.5,84,120,'S',2,1,M.white);
 
 // ---------- floating wall, east face: 78" counter + uppers, 32" oven tower, 10" end filler ----------
-baseRun(42,67.5,177,255,M.teal);
-fronts(42,67.5,177,203,4,34.5,'E',1,3,M.teal); fronts(42,67.5,203,229,4,34.5,'E',1,3,M.teal); fronts(42,67.5,229,255,4,34.5,'E',1,3,M.teal);
-[190,216,242].forEach(z=>[8,19,30].forEach(y=>handle(68.25,y,z,'E',8)));
-box(42,42.6,36,54,177,255,M.quartz);
-box(42,55,54,120,177,255,M.white); fronts(42,55,177,255,54,120,'E',3,2,M.white);
-box(42,67,0,120,255,287,M.teal); box(42,67,0,4,255,287,M.kick);
-fronts(42,67,255,287,4,26,'E',1,1,M.teal);
-box(67,67.75,27,51,257,285,M.steel); box(67.75,68.3,29,49,259,283,M.dark); box(67.75,68.9,48.5,49.7,259,283,M.steel);   // upper oven + handle
-box(67,67.75,53,77,257,285,M.steel); box(67.75,68.3,55,75,259,283,M.dark); box(67.75,68.9,74.5,75.7,259,283,M.steel);   // lower oven + handle
-fronts(42,67,255,287,79,120,'E',1,1,M.teal);
-box(42,52,0,120,287,297,M.teal); fronts(42,52,287,297,4,120,'E',1,1,M.teal);
+baseRun(44,69.5,177,255,M.teal);
+fronts(44,69.5,177,203,4,34.5,'E',1,3,M.teal); fronts(44,69.5,203,229,4,34.5,'E',1,3,M.teal); fronts(44,69.5,229,255,4,34.5,'E',1,3,M.teal);
+[190,216,242].forEach(z=>[8,19,30].forEach(y=>handle(70.25,y,z,'E',8)));
+box(44,44.6,36,54,177,255,M.quartz);
+box(44,57,54,120,177,255,M.white); fronts(44,57,177,255,54,120,'E',3,2,M.white);
+box(44,69,0,120,255,287,M.teal); box(44,69,0,4,255,287,M.kick);
+fronts(44,69,255,287,4,26,'E',1,1,M.teal);
+box(69,69.75,27,51,257,285,M.steel); box(69.75,70.3,29,49,259,283,M.dark); box(69.75,70.9,48.5,49.7,259,283,M.steel);   // upper oven + handle
+box(69,69.75,53,77,257,285,M.steel); box(69.75,70.3,55,75,259,283,M.dark); box(69.75,70.9,74.5,75.7,259,283,M.steel);   // lower oven + handle
+fronts(44,69,255,287,79,120,'E',1,1,M.teal);
+box(44,54,0,120,287,297,M.teal); fronts(44,54,287,297,4,120,'E',1,1,M.teal);
 
 // ---------- island 54" x 144" ----------
-// carcass is 44" deep so the 54" top overhangs 11.5" on the east (table) side for seating
-box(115.5,153.5,0,4,151.5,289.5,M.kick);
-box(112.5,156.5,4,34.5,148.5,292.5,M.teal);
-box(111,168,34.5,36,147,294,M.quartz);
-box(156.5,157,4,34.5,148.5,292.5,M.teal);   // finished back panel
-fronts(112.5,136.5,148.5,166.5,4,34.5,'W',1,3,M.teal);      // 18" drawers
-fronts(112.5,136.5,166.5,202.5,4,34.5,'W',2,1,M.teal);      // 36" sink base
-box(111.75,112.5,6,32.5,203,226,M.steel); box(111.1,111.75,30,32,204,225,M.dark); box(111.1,111.6,8,9.2,206,223,M.steel); // 24" stainless DW + bar handle
-fronts(112.5,136.5,226.5,292.5,4,34.5,'W',3,1,M.teal);      // 66" storage
-[[157.5,8],[157.5,19],[157.5,30]].forEach(([z,y])=>handle(111.75,y,z,'W',8));
-[175,194,237,259,281].forEach(z=>handle(111.75,30,z,'W',6));
-box(115,134,35.4,36.3,170,199,M.steel); box(116,133,35.6,36.5,171,198,M.dark);   // sink
-cyl(0.6,36,48,137,184.5,M.steel); box(129,137.5,47.4,48.6,184,185,M.steel);     // faucet
+// island west face at x=113 (43.5" aisle to the oven-wall counter), north end at z=143.5 (48" aisle to the cooktop counter)
+// carcass is 42" deep so the 54" top overhangs 10.5" on the east (table) side for seating
+const IX=113, IZ=143.5;
+box(IX+3,IX+39,0,4,IZ+3,IZ+141,M.kick);
+box(IX,IX+42,4,34.5,IZ,IZ+144,M.teal);
+box(IX-1.5,IX+52.5,34.5,36,IZ,IZ+144,M.quartz);   // 54" x 144" top
+box(IX+42,IX+42.5,4,34.5,IZ,IZ+144,M.teal);   // finished back panel
+fronts(IX,IX+24,IZ,IZ+18,4,34.5,'W',1,3,M.teal);        // 18" drawers
+fronts(IX,IX+24,IZ+18,IZ+54,4,34.5,'W',2,1,M.teal);     // 36" sink base
+box(IX-0.75,IX,6,32.5,IZ+54.5,IZ+77.5,M.steel); box(IX-1.4,IX-0.75,30,32,IZ+55.5,IZ+76.5,M.dark); box(IX-1.4,IX-0.9,8,9.2,IZ+57.5,IZ+74.5,M.steel); // 24" stainless DW + bar handle
+fronts(IX,IX+24,IZ+78,IZ+144,4,34.5,'W',3,1,M.teal);    // 66" storage
+[8,19,30].forEach(y=>handle(IX-0.75,y,IZ+9,'W',8));
+[IZ+26.5,IZ+45.5,IZ+88.5,IZ+110.5,IZ+132.5].forEach(z=>handle(IX-0.75,30,z,'W',6));
+box(IX+2.5,IX+21.5,35.4,36.3,IZ+21.5,IZ+50.5,M.steel); box(IX+3.5,IX+20.5,35.6,36.5,IZ+22.5,IZ+49.5,M.dark);   // sink
+cyl(0.6,36,48,IX+24.5,IZ+36,M.steel); box(IX+16.5,IX+25,47.4,48.6,IZ+35.5,IZ+36.5,M.steel);     // faucet
 
 // ---------- bar stools on the island's east (table) side, counter height ----------
 function stool(cx,cz){
@@ -290,10 +293,10 @@ function stool(cx,cz){
   cyl(7,0,1.5,cx,cz,M.steel,5.5);                   // base
   const ring=new THREE.Mesh(new THREE.TorusGeometry(6,0.5,10,36),M.steel); ring.rotation.x=Math.PI/2; ring.position.set(cx,8,cz); ring.castShadow=true; scene.add(ring);
 }
-[178,208,238,268].forEach(z=>stool(176,z));
+[IZ+27,IZ+57,IZ+87,IZ+117].forEach(z=>stool(IX+61,z));
 
 // ---------- table 48" round, 4 chairs ----------
-const TC=[252,213.5];
+const TC=[252,IZ+72-7];   // table center 7" north of island center, per plan
 cyl(24,29.5,31,TC[0],TC[1],M.tableTop); cyl(3,1,29.5,TC[0],TC[1],M.chairLeg); cyl(12,0,1.2,TC[0],TC[1],M.chairLeg,8);
 function chair(cx,cz,a){
   const g=new THREE.Group(); g.position.set(cx,0,cz); g.rotation.y=a; scene.add(g);
@@ -306,19 +309,48 @@ chair(TC[0],TC[1]-36,0); chair(TC[0],TC[1]+36,Math.PI); chair(TC[0]+36,TC[1],-Ma
 
 // ---------- labels ----------
 const labels=new THREE.Group(); scene.add(labels);
-function label(text,x,y,z,s=1){
+const dims=new THREE.Group(); dims.visible=false; scene.add(dims);
+function label(text,x,y,z,s=1,group=labels,bg='rgba(36,52,65,.86)'){
   const c=document.createElement('canvas'); const ctx=c.getContext('2d');
   ctx.font='600 40px -apple-system,Helvetica,Arial,sans-serif'; const w=Math.ceil(ctx.measureText(text).width)+44; c.width=w; c.height=68;
-  ctx.font='600 40px -apple-system,Helvetica,Arial,sans-serif'; ctx.fillStyle='rgba(36,52,65,.86)';
+  ctx.font='600 40px -apple-system,Helvetica,Arial,sans-serif'; ctx.fillStyle=bg;
   ctx.beginPath(); ctx.roundRect(0,0,w,68,34); ctx.fill(); ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.fillText(text,22,36);
   const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace;
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,transparent:true,sizeAttenuation:false})); sp.renderOrder=999;
-  sp.userData.base=[w/68*0.052*s,0.052*s]; sp.position.set(x,y,z); labels.add(sp);
+  sp.userData.base=[w/68*0.052*s,0.052*s]; sp.position.set(x,y,z); group.add(sp);
 }
-function fitLabels(){ labels.children.forEach(sp=>{const [bw,bh]=sp.userData.base; sp.scale.set(bw/camera.aspect,bh,1);}); }
+function fitLabels(){ [...labels.children,...dims.children].forEach(sp=>{ if(!sp.userData.base) return; const [bw,bh]=sp.userData.base; sp.scale.set(bw/camera.aspect,bh,1);}); }
+
+// ---------- measurements: dimension lines with end ticks, text computed from the model ----------
+const M_dim=new THREE.MeshBasicMaterial({color:0xc0392b});
+function fmt(n){ n=Math.round(n*2)/2; const s=(n%1?n.toFixed(1):n)+'″'; return n>=48? `${s} (${Math.floor(n/12)}′${n%12?(n%12)+'″':''})` : s; }
+function dim(x0,z0,x1,z1,y,note){
+  const dx=x1-x0, dz=z1-z0, L=Math.hypot(dx,dz);
+  const g=new THREE.Group(); g.position.set(x0,y,z0); g.rotation.y=Math.atan2(-dz,dx); dims.add(g);
+  const bar=new THREE.Mesh(new THREE.BoxGeometry(L,0.7,0.7),M_dim); bar.position.x=L/2; g.add(bar);
+  for(const u of [0,L]){ const t=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,8),M_dim); t.position.set(u,0,0); g.add(t);
+    const v=new THREE.Mesh(new THREE.BoxGeometry(0.7,8,0.7),M_dim); v.position.set(u,0,0); g.add(v); }
+  label((note?note+': ':'')+fmt(L),(x0+x1)/2,y+4,(z0+z1)/2,0.72,dims,'rgba(192,57,43,.9)');
+}
+// walkways (measured face to face in the model)
+dim(122,95.5,122,IZ,40,'Counter aisle');                 // cooktop counter front to island
+dim(69.5,196,IX,196,40,'Oven-wall aisle');               // oven-wall counter front to island
+dim(0,165,40,165,40,'Hall');                             // hall width west of floating wall
+dim(IX+52.5,TC[1],TC[0]-24,TC[1],40,'Island to table');  // island top edge to table edge
+dim(TC[0]+24,TC[1],314,TC[1],40,'Table to bay wall');    // table edge to bay window wall
+dim(192,103.5,192,IZ,40,'Fridge to island');             // fridge door face to island
+dim(IX+52.5,160,230,160,40,'Island to east wall');       // island top edge to exterior wall
+// fixtures
+dim(IX-1.5,IZ-16,IX+52.5,IZ-16,40,'Island');
+dim(IX-8,IZ,IX-8,IZ+144,40);
+dim(42,177,42,297,124,'Floating wall');
+dim(TC[0]-24,TC[1]-30,TC[0]+24,TC[1]-30,32,'Table');
+dim(40,318,230,318,2,'Open to family room');
+dim(0,100,68,100,124,'Mudroom');
+dim(-42,235,0,235,40,'Bath');
 label('MUDROOM',34,100,70); label('PANTRY 13′6″ × 5′6″',150,100,40); label('BATH',-21,100,235); label('HALL',20,100,160);
-label('ISLAND 54″ × 144″',139,48,222); label('FLOATING WALL 10′',40,128,237); label('DOUBLE OVENS',70,100,271);
-label('36″ FRIDGE',192,96,92); label('30″ COOKTOP',138,80,86); label('48″ ROUND',252,44,213.5); label('BAY',298,100,213);
+label('ISLAND 54″ × 144″',IX+27,48,IZ+72); label('FLOATING WALL 10′',42,128,237); label('DOUBLE OVENS',72,100,271);
+label('36″ FRIDGE',192,96,92); label('30″ COOKTOP',138,80,86); label('48″ ROUND',TC[0],44,TC[1]); label('BAY',298,100,213);
 label('OPEN TO FAMILY ROOM',115,24,335); label('CONCEALED PANTRY DOOR',87,66,100,0.8);
 
 // ---------- camera control ----------
@@ -335,7 +367,7 @@ const views={
   cooktop:{p:[150,62,262],t:[158,52,72]},
   ovens:{p:[180,60,300],t:[50,48,250]},
   pantry:{p:[224,62,46],t:[86,46,28]},
-  plan:{p:[136,820,172],t:[136,0,170]},
+  plan:{p:[136,600,172],t:[136,0,170]},
 };
 function setView(v){
   const p=new THREE.Vector3(...v.p), t=new THREE.Vector3(...v.t), d=p.clone().sub(t);
@@ -344,6 +376,8 @@ function setView(v){
 const btns=[...document.querySelectorAll('button[data-v]')];
 btns.forEach(b=>b.addEventListener('click',()=>{btns.forEach(x=>x.classList.toggle('on',x===b)); setView(views[b.dataset.v]);}));
 document.getElementById('lbl').addEventListener('click',e=>{labels.visible=!labels.visible; e.currentTarget.classList.toggle('on',labels.visible);});
+document.getElementById('dim').addEventListener('click',e=>{dims.visible=!dims.visible; e.currentTarget.classList.toggle('on',dims.visible);
+  if(dims.visible&&labels.visible){labels.visible=false; document.getElementById('lbl').classList.remove('on');}});
 
 const pts=new Map(); let last=null, pinch=null;
 const pdist=()=>{const a=[...pts.values()]; return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);};
@@ -366,6 +400,7 @@ function resize(){ const w=canvas.clientWidth||innerWidth, h=canvas.clientHeight
 addEventListener('resize',resize); resize(); setView(views.overview);
 renderer.setAnimationLoop(()=>{ applyCam(); renderer.render(scene,camera); });
 // offscreen still at any size (used to export renders)
+window.__setLayers=(l,d)=>{labels.visible=l; dims.visible=d;};
 window.__render3d=(view,w,h)=>{ if(view) setView(views[view]); const pr=renderer.getPixelRatio(); renderer.setPixelRatio(1); renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); fitLabels(); applyCam(); renderer.render(scene,camera); const url=renderer.domElement.toDataURL('image/png'); renderer.setPixelRatio(pr); resize(); return url; };
 </script>
 </body></html>
