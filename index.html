@@ -333,15 +333,15 @@ function dim(x0,z0,x1,z1,y,note){
   label((note?note+': ':'')+fmt(L),(x0+x1)/2,y+4,(z0+z1)/2,0.72,dims,'rgba(192,57,43,.9)');
 }
 // walkways (measured face to face in the model)
-dim(122,95.5,122,IZ,40,'Counter aisle');                 // cooktop counter front to island
+dim(108,95.5,108,IZ,40,'Counter aisle');                 // cooktop counter front to island
 dim(69.5,196,IX,196,40,'Oven-wall aisle');               // oven-wall counter front to island
 dim(0,165,40,165,40,'Hall');                             // hall width west of floating wall
 dim(IX+52.5,TC[1],TC[0]-24,TC[1],40,'Island to table');  // island top edge to table edge
 dim(TC[0]+24,TC[1],314,TC[1],40,'Table to bay wall');    // table edge to bay window wall
-dim(192,103.5,192,IZ,40,'Fridge to island');             // fridge door face to island
+dim(215,103.5,215,IZ,40,'Fridge to island');             // fridge door face to island
 dim(IX+52.5,160,230,160,40,'Island to east wall');       // island top edge to exterior wall
 // fixtures
-dim(IX-1.5,IZ-16,IX+52.5,IZ-16,40,'Island');
+dim(IX-1.5,IZ+150,IX+52.5,IZ+150,40,'Island');
 dim(IX-8,IZ,IX-8,IZ+144,40);
 dim(42,177,42,297,124,'Floating wall');
 dim(TC[0]-24,TC[1]-30,TC[0]+24,TC[1]-30,32,'Table');
