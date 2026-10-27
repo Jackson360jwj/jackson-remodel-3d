@@ -301,7 +301,8 @@ function chair(cx,cz,a){
   add(-9,9,17,19,-9,9,M.chair); add(-9,9,19,36,-9,-7.5,M.chair);
   [[-8,-8],[8,-8],[-8,8],[8,8]].forEach(([x,z])=>add(x-0.75,x+0.75,0,17,z-0.75,z+0.75,M.chairLeg));
 }
-chair(TC[0],TC[1]-36,0); chair(TC[0],TC[1]+36,Math.PI); chair(TC[0]+36,TC[1],Math.PI/2); chair(TC[0]-36,TC[1],-Math.PI/2);
+// chair back is on the local -z side; rotate so each back faces away from the table
+chair(TC[0],TC[1]-36,0); chair(TC[0],TC[1]+36,Math.PI); chair(TC[0]+36,TC[1],-Math.PI/2); chair(TC[0]-36,TC[1],Math.PI/2);
 
 // ---------- labels ----------
 const labels=new THREE.Group(); scene.add(labels);
